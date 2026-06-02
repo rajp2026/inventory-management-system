@@ -5,6 +5,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import time
 
 from app.api.v1.product import router as product_router
+from app.api.v1.customer import router as customer_router
+
 from app.core.logger import logger
 from app.core.exceptions import (
     AppException,
@@ -47,4 +49,5 @@ def read_root():
     return {"message": "Welcome to the Inventory Management System API"}
 
 
+app.include_router(customer_router)
 app.include_router(product_router)
