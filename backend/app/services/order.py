@@ -1,6 +1,8 @@
 from decimal import Decimal
 
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import (
     CustomerNotFoundException,
@@ -10,26 +12,16 @@ from app.core.exceptions import (
 
 from app.models.order import Order
 from app.models.order_item import OrderItem
-
-from app.repositories.order import (
-    OrderRepository
-)
-
-from app.repositories.order_item import (
-    OrderItemRepository
-)
+from app.models.product import Product
 
 from app.repositories.customer import (
     CustomerRepository
 )
 
-from app.repositories.product import (
-    ProductRepository
-)
-
 from app.schemas.order import (
     OrderCreate
 )
+
 
 class OrderService:
 
@@ -39,6 +31,7 @@ class OrderService:
         payload: OrderCreate
     ):
         try:
+            # 1. Validate customer ──────────────── 1 query
             customer = await CustomerRepository.get_by_id(
                 db,
                 payload.customer_id
@@ -47,23 +40,27 @@ class OrderService:
             if not customer:
                 raise CustomerNotFoundException()
 
-            order = Order(
-                customer_id=payload.customer_id,
-                total_amount=0
+            # 2. Batch-fetch ALL products with row lock ── 1 query
+            product_ids = [
+                item.product_id for item in payload.items
+            ]
+
+            result = await db.execute(
+                select(Product)
+                .where(Product.id.in_(product_ids))
+                .with_for_update()
             )
 
-            await OrderRepository.create(
-                db,
-                order
-            )
+            products = {
+                p.id: p for p in result.scalars().all()
+            }
 
+            # 3. Validate ALL items before any writes
+            order_items = []
             total_amount = Decimal("0")
 
             for item in payload.items:
-                product = await ProductRepository.get_by_id(
-                    db,
-                    item.product_id
-                )
+                product = products.get(item.product_id)
 
                 if not product:
                     raise ProductNotFoundException(
@@ -78,26 +75,43 @@ class OrderService:
                 line_total = product.price * item.quantity
                 total_amount += line_total
 
-                order_item = OrderItem(
-                    order_id=order.id,
-                    product_id=product.id,
-                    quantity=item.quantity,
-                    unit_price=product.price
+                order_items.append(
+                    OrderItem(
+                        product_id=product.id,
+                        quantity=item.quantity,
+                        unit_price=product.price
+                    )
                 )
 
-                await OrderItemRepository.create(
-                    db,
-                    order_item
+            # 4. All validations passed — create order with items
+            order = Order(
+                customer_id=payload.customer_id,
+                total_amount=total_amount,
+                order_items=order_items
+            )
+
+            db.add(order)
+
+            # 5. Atomic stock decrement ──────────── N UPDATE queries
+            for item in payload.items:
+                await db.execute(
+                    update(Product)
+                    .where(Product.id == item.product_id)
+                    .values(
+                        stock_quantity=Product.stock_quantity - item.quantity
+                    )
                 )
 
-                product.stock_quantity -= item.quantity
-
-            order.total_amount = total_amount
-
+            # 6. Commit + reload with items ──────── 1 commit + 1 query
             await db.commit()
-            await db.refresh(order)
 
-            return order
+            result = await db.execute(
+                select(Order)
+                .options(selectinload(Order.order_items))
+                .where(Order.id == order.id)
+            )
+
+            return result.scalar_one()
 
         except Exception:
             await db.rollback()
