@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getProducts, getProductCount, deleteProduct } from '../../api/productApi';
 import Table from '../../components/Table';
 import Loader from '../../components/Loader';
+import Modal from '../../components/Modal';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -10,6 +11,8 @@ const ProductList = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: "" });
   const limit = 10;
 
   useEffect(() => {
@@ -33,20 +36,28 @@ const ProductList = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      try {
-        await deleteProduct(id);
-        // If we deleted the last item on this page, go back a page
-        if (products.length === 1 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
-        } else {
-          fetchData(currentPage);
-        }
-      } catch (error) {
-        console.error("Failed to delete product:", error);
-        alert("Failed to delete product. " + (error.response?.data?.message || ""));
+  const handleDeleteClick = (id) => {
+    setDeleteConfirm({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.id;
+    setDeleteConfirm({ isOpen: false, id: null });
+    
+    try {
+      await deleteProduct(id);
+      // If we deleted the last item on this page, go back a page
+      if (products.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      } else {
+        fetchData(currentPage);
       }
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      setErrorModal({ 
+        isOpen: true, 
+        message: error.response?.data?.message || "An unexpected error occurred while deleting." 
+      });
     }
   };
 
@@ -61,7 +72,7 @@ const ProductList = () => {
       render: (row) => (
         <div className="flex gap-3">
           <Link to={`/products/${row.id}/edit`} className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors">Edit</Link>
-          <button onClick={() => handleDelete(row.id)} className="text-red-600 hover:text-red-900 font-medium transition-colors">Delete</button>
+          <button onClick={() => handleDeleteClick(row.id)} className="text-red-600 hover:text-red-900 font-medium transition-colors">Delete</button>
         </div>
       )
     }
@@ -126,6 +137,60 @@ const ProductList = () => {
           )}
         </div>
       )}
+      
+      <Modal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+        title="Confirm Deletion"
+        actions={
+          <>
+            <button 
+              onClick={() => setDeleteConfirm({ isOpen: false, id: null })}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
+            >
+              Delete
+            </button>
+          </>
+        }
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-red-100 p-2 rounded-full text-red-600">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal({ isOpen: false, message: "" })}
+        title="Cannot Delete Product"
+        actions={
+          <button 
+            onClick={() => setErrorModal({ isOpen: false, message: "" })}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm"
+          >
+            Understood
+          </button>
+        }
+      >
+        <div className="flex items-start gap-3">
+          <div className="bg-amber-100 p-2 rounded-full text-amber-600 shrink-0 mt-0.5">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-700 leading-relaxed">{errorModal.message}</p>
+        </div>
+      </Modal>
     </div>
   );
 };

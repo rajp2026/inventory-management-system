@@ -74,16 +74,15 @@ class CustomerRepository:
         customer: Customer
     ):
         from app.models.order import Order
-        from app.models.order_item import OrderItem
-        from sqlalchemy import delete, select
+        from app.core.exceptions import DependentRecordException
+        from sqlalchemy import select
         
-        # Manually cascade delete orders and their items
-        orders_result = await db.execute(select(Order.id).where(Order.customer_id == customer.id))
-        order_ids = orders_result.scalars().all()
+        # Check if customer has any orders
+        orders_result = await db.execute(select(Order.id).where(Order.customer_id == customer.id).limit(1))
+        has_orders = orders_result.scalar_one_or_none()
         
-        if order_ids:
-            await db.execute(delete(OrderItem).where(OrderItem.order_id.in_(order_ids)))
-            await db.execute(delete(Order).where(Order.customer_id == customer.id))
+        if has_orders:
+            raise DependentRecordException("Cannot delete customer because they have related orders. Please delete their orders first.")
             
         await db.delete(customer)
         await db.commit()

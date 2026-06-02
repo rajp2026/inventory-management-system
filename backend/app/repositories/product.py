@@ -67,10 +67,15 @@ class ProductRepository:
         product: Product
     ):
         from app.models.order_item import OrderItem
-        from sqlalchemy import delete
+        from app.core.exceptions import DependentRecordException
+        from sqlalchemy import select
         
-        # Manually cascade delete related order items
-        await db.execute(delete(OrderItem).where(OrderItem.product_id == product.id))
+        # Check if product is in any orders
+        order_item_result = await db.execute(select(OrderItem.id).where(OrderItem.product_id == product.id).limit(1))
+        has_orders = order_item_result.scalar_one_or_none()
+        
+        if has_orders:
+            raise DependentRecordException("Cannot delete product because it is part of existing orders. Please delete the related orders first.")
         
         await db.delete(product)
         await db.commit()

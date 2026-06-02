@@ -38,6 +38,13 @@ class InventoryNotAvailableException(AppException):
             message=message
         )
 
+class DependentRecordException(AppException):
+    def __init__(self, message: str = "Cannot delete because related records exist"):
+        super().__init__(
+            status_code=400,
+            message=message
+        )
+
 async def app_exception_handler(request: Request, exc: AppException):
     logger.error(f"AppException: {exc.message}")
     response = GenericResponse(
