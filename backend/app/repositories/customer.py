@@ -20,6 +20,11 @@ class CustomerRepository:
         return customer
 
     @staticmethod
+    async def count(db: AsyncSession):
+        result = await db.execute(select(func.count()).select_from(Customer))
+        return result.scalar() or 0
+
+    @staticmethod
     async def get_all(
         db: AsyncSession,
         page: int = 1,

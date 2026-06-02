@@ -22,6 +22,20 @@ router = APIRouter(
     tags=["Products"]
 )
 
+@router.get(
+    "/count",
+    response_model=GenericResponse[int]
+)
+async def get_product_count(
+    db: AsyncSession = Depends(get_db)
+):
+    count = await ProductRepository.count(db)
+    return GenericResponse(
+        status="success",
+        message="Count retrieved successfully",
+        data=count
+    )
+
 @router.post(
     "/create",
     response_model=GenericResponse[ProductResponse],

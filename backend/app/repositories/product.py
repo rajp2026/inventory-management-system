@@ -9,6 +9,11 @@ from app.models.product import Product
 class ProductRepository:
 
     @staticmethod
+    async def count(db: AsyncSession):
+        result = await db.execute(select(func.count()).select_from(Product))
+        return result.scalar() or 0
+
+    @staticmethod
     async def get_all(db: AsyncSession, page: int = 1, limit: int = 10):
         offset = (page - 1) * limit
         

@@ -37,6 +37,20 @@ router = APIRouter(
     tags=["Customers"]
 )
 
+@router.get(
+    "/count",
+    response_model=GenericResponse[int]
+)
+async def get_customer_count(
+    db: AsyncSession = Depends(get_db)
+):
+    count = await CustomerRepository.count(db)
+    return GenericResponse(
+        status="success",
+        message="Count retrieved successfully",
+        data=count
+    )
+
 @router.post(
     "",
     response_model=GenericResponse[CustomerResponse],

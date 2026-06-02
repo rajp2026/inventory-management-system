@@ -3,6 +3,9 @@ import client from "./client";
 export const getCustomers = (page, limit) =>
   client.get(`/customers?page=${page}&limit=${limit}`).then((res) => res.data);
 
+export const getCustomerCount = () =>
+  client.get("/customers/count").then((res) => res.data);
+
 export const getCustomer = (id) =>
   client.get(`/customers/${id}`).then((res) => res.data);
 

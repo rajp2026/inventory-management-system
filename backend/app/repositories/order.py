@@ -35,18 +35,30 @@ class OrderRepository:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def count(db: AsyncSession):
+        from sqlalchemy import func
+        result = await db.execute(select(func.count()).select_from(Order))
+        return result.scalar() or 0
+
+    @staticmethod
     async def get_all(
         db: AsyncSession,
-        offset: int = 0,
+        page: int = 1,
         limit: int = 10
     ):
+        from sqlalchemy import func
+        offset = (page - 1) * limit
+        
+        count_result = await db.execute(select(func.count()).select_from(Order))
+        total = count_result.scalar() or 0
+
         result = await db.execute(
             select(Order)
             .offset(offset)
             .limit(limit)
         )
 
-        return result.scalars().all()
+        return result.scalars().all(), total
 
     @staticmethod
     async def delete(
