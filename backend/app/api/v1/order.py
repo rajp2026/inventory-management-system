@@ -77,6 +77,24 @@ async def create_order(
         data=order
     )
 
+@router.get(
+    "/{order_id}",
+    response_model=GenericResponse[OrderResponse]
+)
+async def get_order(
+    order_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    order = await OrderRepository.get_by_id(db, order_id)
+    if not order:
+        raise OrderNotFoundException()
+    
+    return GenericResponse(
+        status="success",
+        message="Order retrieved successfully",
+        data=order
+    )
+
 @router.delete(
     "/{order_id}",
     status_code=200

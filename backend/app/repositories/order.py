@@ -28,7 +28,8 @@ class OrderRepository:
         result = await db.execute(
             select(Order)
             .options(
-                selectinload(Order.order_items)
+                selectinload(Order.customer),
+                selectinload(Order.order_items).selectinload(OrderItem.product)
             )
             .where(Order.id == order_id)
         )
