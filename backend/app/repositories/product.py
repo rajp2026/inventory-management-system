@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.product import Product
@@ -9,11 +9,20 @@ from app.models.product import Product
 class ProductRepository:
 
     @staticmethod
-    async def get_all(db: AsyncSession):
+    async def get_all(db: AsyncSession, page: int = 1, limit: int = 10):
+        offset = (page - 1) * limit
+        
+        # Get total count
+        count_result = await db.execute(select(func.count()).select_from(Product))
+        total = count_result.scalar() or 0
+        
+        # Get paginated items
         result = await db.execute(
-            select(Product)
+            select(Product).offset(offset).limit(limit)
         )
-        return result.scalars().all()
+        items = result.scalars().all()
+        
+        return items, total
 
     @staticmethod
     async def get_by_id(
