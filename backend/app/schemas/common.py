@@ -15,5 +15,3 @@ class GenericResponse(BaseModel, Generic[T]):
     message: str
     data: Optional[T] = None
     meta: Optional[PaginationMeta] = None
-
-    model_config = {"from_attributes": True}

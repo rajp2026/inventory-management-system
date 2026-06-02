@@ -30,6 +30,16 @@ class ProductRepository:
         return items, total
 
     @staticmethod
+    async def get_low_stock(db: AsyncSession, threshold: int = 10, limit: int = 10):
+        result = await db.execute(
+            select(Product)
+            .where(Product.stock_quantity <= threshold)
+            .order_by(Product.stock_quantity.asc())
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    @staticmethod
     async def get_by_id(
         db: AsyncSession,
         product_id: UUID

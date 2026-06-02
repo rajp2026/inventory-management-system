@@ -17,3 +17,6 @@ export const updateProduct = (id, data) =>
 
 export const deleteProduct = (id) =>
   client.delete(`/products/${id}`).then((res) => res.data);
+
+export const getLowStockProducts = (threshold = 10, limit = 10) =>
+  client.get(`/products/low-stock?threshold=${threshold}&limit=${limit}`).then((res) => res.data);

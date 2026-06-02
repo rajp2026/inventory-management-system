@@ -82,6 +82,22 @@ async def get_products(
     )
 
 @router.get(
+    "/low-stock",
+    response_model=GenericResponse[list[ProductResponse]]
+)
+async def get_low_stock_products(
+    threshold: int = 10,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    items = await ProductRepository.get_low_stock(db, threshold, limit)
+    return GenericResponse(
+        status="success",
+        message="Low stock products retrieved successfully",
+        data=items
+    )
+
+@router.get(
     "/{product_id}",
     response_model=GenericResponse[ProductResponse]
 )
