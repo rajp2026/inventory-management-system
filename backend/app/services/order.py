@@ -1,7 +1,12 @@
 from decimal import Decimal
 
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import (
+    CustomerNotFoundException,
+    ProductNotFoundException,
+    InventoryNotAvailableException
+)
 
 from app.models.order import Order
 from app.models.order_item import OrderItem
@@ -40,10 +45,7 @@ class OrderService:
             )
 
             if not customer:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Customer not found"
-                )
+                raise CustomerNotFoundException()
 
             order = Order(
                 customer_id=payload.customer_id,
@@ -64,15 +66,13 @@ class OrderService:
                 )
 
                 if not product:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Product {item.product_id} not found"
+                    raise ProductNotFoundException(
+                        f"Product {item.product_id} not found"
                     )
 
                 if product.stock_quantity < item.quantity:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Insufficient stock for {product.name}"
+                    raise InventoryNotAvailableException(
+                        f"Insufficient stock for {product.name}"
                     )
 
                 line_total = product.price * item.quantity

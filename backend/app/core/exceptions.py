@@ -14,6 +14,30 @@ class AppException(Exception):
         self.message = message
         self.data = data
 
+
+class CustomerNotFoundException(AppException):
+    def __init__(self, message: str = "Customer not found"):
+        super().__init__(
+            status_code=404,
+            message=message
+        )
+
+
+class ProductNotFoundException(AppException):
+    def __init__(self, message: str = "Product not found"):
+        super().__init__(
+            status_code=404,
+            message=message
+        )
+
+
+class InventoryNotAvailableException(AppException):
+    def __init__(self, message: str = "Insufficient stock"):
+        super().__init__(
+            status_code=400,
+            message=message
+        )
+
 async def app_exception_handler(request: Request, exc: AppException):
     logger.error(f"AppException: {exc.message}")
     response = GenericResponse(

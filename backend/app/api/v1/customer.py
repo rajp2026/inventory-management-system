@@ -2,8 +2,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    Depends,
-    HTTPException
+    Depends
 )
 
 from sqlalchemy.ext.asyncio import (
@@ -22,6 +21,10 @@ import math
 
 from app.services.customer import (
     CustomerService
+)
+
+from app.core.exceptions import (
+    CustomerNotFoundException
 )
 
 from app.repositories.customer import (
@@ -95,10 +98,7 @@ async def get_customer(
     )
 
     if not customer:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer not found"
-        )
+        raise CustomerNotFoundException()
 
     return GenericResponse(
         status="success",
@@ -142,10 +142,7 @@ async def delete_customer(
     )
 
     if not customer:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer not found"
-        )
+        raise CustomerNotFoundException()
 
     await CustomerRepository.delete(
         db,

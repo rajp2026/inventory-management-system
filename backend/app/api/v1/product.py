@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.dependencies import get_db
@@ -14,6 +14,7 @@ import math
 
 from app.services.product import ProductService
 from app.repositories.product import ProductRepository
+from app.core.exceptions import ProductNotFoundException
 
 
 router = APIRouter(
@@ -80,10 +81,7 @@ async def get_product(
     )
 
     if not product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-        )
+        raise ProductNotFoundException()
 
     return GenericResponse(
         status="success",
@@ -125,10 +123,7 @@ async def delete_product(
     )
 
     if not product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-        )
+        raise ProductNotFoundException()
 
     await ProductRepository.delete(
         db,

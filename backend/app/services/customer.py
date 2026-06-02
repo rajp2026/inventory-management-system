@@ -1,4 +1,7 @@
-from fastapi import HTTPException
+from app.core.exceptions import (
+    AppException,
+    CustomerNotFoundException
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
@@ -29,9 +32,9 @@ class CustomerService:
         )
 
         if existing_customer:
-            raise HTTPException(
+            raise AppException(
                 status_code=400,
-                detail="Email already exists"
+                message="Email already exists"
             )
 
         customer = Customer(
@@ -58,10 +61,7 @@ class CustomerService:
         )
 
         if not customer:
-            raise HTTPException(
-                status_code=404,
-                detail="Customer not found"
-            )
+            raise CustomerNotFoundException()
 
         update_data = payload.model_dump(
             exclude_unset=True
@@ -80,9 +80,9 @@ class CustomerService:
                 existing_customer
                 and existing_customer.id != customer.id
             ):
-                raise HTTPException(
+                raise AppException(
                     status_code=400,
-                    detail="Email already exists"
+                    message="Email already exists"
                 )
 
         for field, value in update_data.items():

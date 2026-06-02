@@ -1,4 +1,7 @@
-from fastapi import HTTPException
+from app.core.exceptions import (
+    AppException,
+    ProductNotFoundException
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.product import Product
@@ -22,15 +25,15 @@ class ProductService:
         )
 
         if existing:
-            raise HTTPException(
+            raise AppException(
                 status_code=400,
-                detail="SKU already exists"
+                message="SKU already exists"
             )
 
         if data.stock_quantity < 0:
-            raise HTTPException(
+            raise AppException(
                 status_code=400,
-                detail="Stock cannot be negative"
+                message="Stock cannot be negative"
             )
 
         product = Product(
@@ -57,10 +60,7 @@ class ProductService:
         )
 
         if not product:
-            raise HTTPException(
-                status_code=404,
-                detail="Product not found"
-            )
+            raise ProductNotFoundException()
 
         update_data = data.model_dump(
             exclude_unset=True
