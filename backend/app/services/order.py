@@ -107,7 +107,10 @@ class OrderService:
 
             result = await db.execute(
                 select(Order)
-                .options(selectinload(Order.order_items))
+                .options(
+                    selectinload(Order.customer),
+                    selectinload(Order.order_items).selectinload(OrderItem.product)
+                )
                 .where(Order.id == order.id)
             )
 

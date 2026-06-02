@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.order import Order
+from app.models.order_item import OrderItem
 
 
 class OrderRepository:
@@ -54,6 +55,11 @@ class OrderRepository:
 
         result = await db.execute(
             select(Order)
+            .options(
+                selectinload(Order.customer),
+                selectinload(Order.order_items)
+                .selectinload(OrderItem.product)
+            )
             .offset(offset)
             .limit(limit)
         )

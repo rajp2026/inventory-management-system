@@ -1,4 +1,7 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.dependencies import get_db
@@ -6,6 +9,8 @@ from app.schemas.order import OrderCreate, OrderResponse
 from app.schemas.common import GenericResponse, PaginationMeta
 from app.services.order import OrderService
 from app.repositories.order import OrderRepository
+from app.models.product import Product
+from app.core.exceptions import OrderNotFoundException
 import math
 
 router = APIRouter(
@@ -70,4 +75,34 @@ async def create_order(
         status="success",
         message="Order created successfully",
         data=order
+    )
+
+@router.delete(
+    "/{order_id}",
+    status_code=200
+)
+async def delete_order(
+    order_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    order = await OrderRepository.get_by_id(db, order_id)
+    if not order:
+        raise OrderNotFoundException()
+
+    # Restore stock for each order item
+    for item in order.order_items:
+        await db.execute(
+            update(Product)
+            .where(Product.id == item.product_id)
+            .values(
+                stock_quantity=Product.stock_quantity
+                + item.quantity
+            )
+        )
+
+    await db.delete(order)
+    await db.commit()
+    return GenericResponse(
+        status="success",
+        message="Order deleted successfully"
     )

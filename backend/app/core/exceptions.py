@@ -45,6 +45,13 @@ class DependentRecordException(AppException):
             message=message
         )
 
+class OrderNotFoundException(AppException):
+    def __init__(self, message: str = "Order not found"):
+        super().__init__(
+            status_code=404,
+            message=message
+        )
+
 async def app_exception_handler(request: Request, exc: AppException):
     logger.error(f"AppException: {exc.message}")
     response = GenericResponse(
