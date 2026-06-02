@@ -17,6 +17,8 @@ from app.schemas.customer import (
     CustomerUpdate,
     CustomerResponse
 )
+from app.schemas.common import GenericResponse, PaginationMeta
+import math
 
 from app.services.customer import (
     CustomerService
@@ -34,32 +36,52 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=CustomerResponse,
+    response_model=GenericResponse[CustomerResponse],
     status_code=201
 )
 async def create_customer(
     payload: CustomerCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    return await CustomerService.create_customer(
+    customer = await CustomerService.create_customer(
         db,
         payload
+    )
+    return GenericResponse(
+        status="success",
+        message="Customer created successfully",
+        data=customer
     )
 
 @router.get(
     "",
-    response_model=list[CustomerResponse]
+    response_model=GenericResponse[list[CustomerResponse]]
 )
 async def get_customers(
+    page: int = 1,
+    limit: int = 10,
     db: AsyncSession = Depends(get_db)
 ):
-    return await CustomerRepository.get_all(
-        db
+    items, total = await CustomerRepository.get_all(db, page, limit)
+    total_pages = math.ceil(total / limit) if limit > 0 else 1
+    
+    meta = PaginationMeta(
+        page=page,
+        limit=limit,
+        total_items=total,
+        total_pages=total_pages
+    )
+    
+    return GenericResponse(
+        status="success",
+        message="Customers retrieved successfully",
+        data=items,
+        meta=meta
     )
 
 @router.get(
     "/{customer_id}",
-    response_model=CustomerResponse
+    response_model=GenericResponse[CustomerResponse]
 )
 async def get_customer(
     customer_id: UUID,
@@ -78,11 +100,35 @@ async def get_customer(
             detail="Customer not found"
         )
 
-    return customer
+    return GenericResponse(
+        status="success",
+        message="Customer retrieved successfully",
+        data=customer
+    )
+
+@router.put(
+    "/{customer_id}",
+    response_model=GenericResponse[CustomerResponse]
+)
+async def update_customer(
+    customer_id: UUID,
+    payload: CustomerUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    customer = await CustomerService.update_customer(
+        db,
+        customer_id,
+        payload
+    )
+    return GenericResponse(
+        status="success",
+        message="Customer updated successfully",
+        data=customer
+    )
 
 @router.delete(
     "/{customer_id}",
-    status_code=204
+    status_code=200
 )
 async def delete_customer(
     customer_id: UUID,
@@ -105,19 +151,7 @@ async def delete_customer(
         db,
         customer
     )
-
-
-@router.put(
-    "/{customer_id}",
-    response_model=CustomerResponse
-)
-async def update_customer(
-    customer_id: UUID,
-    payload: CustomerUpdate,
-    db: AsyncSession = Depends(get_db)
-):
-    return await CustomerService.update_customer(
-        db,
-        customer_id,
-        payload
+    return GenericResponse(
+        status="success",
+        message="Customer deleted successfully"
     )
