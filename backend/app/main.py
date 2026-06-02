@@ -6,6 +6,7 @@ import time
 
 from app.api.v1.product import router as product_router
 from app.api.v1.customer import router as customer_router
+from app.api.v1.order import router as order_router
 
 from app.core.logger import logger
 from app.core.exceptions import (
@@ -51,3 +52,4 @@ def read_root():
 
 app.include_router(customer_router)
 app.include_router(product_router)
+app.include_router(order_router)
