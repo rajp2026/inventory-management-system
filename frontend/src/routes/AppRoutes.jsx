@@ -8,6 +8,7 @@ import ProductCreate from '../pages/Products/ProductCreate';
 import ProductEdit from '../pages/Products/ProductEdit';
 import CustomerList from '../pages/Customers/CustomerList';
 import CustomerCreate from '../pages/Customers/CustomerCreate';
+import CustomerEdit from '../pages/Customers/CustomerEdit';
 import OrderList from '../pages/Orders/OrderList';
 import OrderCreate from '../pages/Orders/OrderCreate';
 import OrderDetail from '../pages/Orders/OrderDetail';
@@ -25,6 +26,7 @@ const AppRoutes = () => {
 
         <Route path="/customers" element={<CustomerList />} />
         <Route path="/customers/create" element={<CustomerCreate />} />
+        <Route path="/customers/:id/edit" element={<CustomerEdit />} />
 
         <Route path="/orders" element={<OrderList />} />
         <Route path="/orders/create" element={<OrderCreate />} />

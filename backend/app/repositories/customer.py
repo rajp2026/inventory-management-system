@@ -73,6 +73,18 @@ class CustomerRepository:
         db: AsyncSession,
         customer: Customer
     ):
+        from app.models.order import Order
+        from app.models.order_item import OrderItem
+        from sqlalchemy import delete, select
+        
+        # Manually cascade delete orders and their items
+        orders_result = await db.execute(select(Order.id).where(Order.customer_id == customer.id))
+        order_ids = orders_result.scalars().all()
+        
+        if order_ids:
+            await db.execute(delete(OrderItem).where(OrderItem.order_id.in_(order_ids)))
+            await db.execute(delete(Order).where(Order.customer_id == customer.id))
+            
         await db.delete(customer)
         await db.commit()
 

@@ -66,6 +66,12 @@ class ProductRepository:
         db: AsyncSession,
         product: Product
     ):
+        from app.models.order_item import OrderItem
+        from sqlalchemy import delete
+        
+        # Manually cascade delete related order items
+        await db.execute(delete(OrderItem).where(OrderItem.product_id == product.id))
+        
         await db.delete(product)
         await db.commit()
     
